@@ -15,14 +15,99 @@ public class Config {
     private JPanel one;
     private JTextField txtfield1;
     public String yaml_path = BurpExtender.Yaml_Path;
-    private View view_class;
-    private List<View.LogEntry> log;
     public JSpinner spinner1;
+    private BurpExtender burp;
+    public JTabbedPane ruleTabbedPane;
+    public TabTitleEditListener ruleSwitch;
+    protected static JPopupMenu tabMenu = new JPopupMenu();
+    private JMenuItem closeTabMenuItem = new JMenuItem("Delete");
+    private static int RulesInt = 0;
+
+    public static String new_Rules() {
+        RulesInt += 1;
+        return "New " + RulesInt;
+    }
 
 
-    public Config(View view_class, List<View.LogEntry> log) {
-        this.view_class = view_class;
-        this.log = log;
+    public void newTab() {
+        Object[][] data = new Object[][]{{false, "New Name", "(New Regex)", "gray", "any", "nfa", false}};
+        insertTab(ruleTabbedPane, Config.new_Rules(), data);
+    }
+
+    public void insertTab(JTabbedPane pane, String title, Object[][] data) {
+        pane.addTab(title, new JLabel());
+        pane.remove(pane.getSelectedIndex());
+        pane.addTab("...", new JLabel());
+    }
+
+    public void closeTabActionPerformed(ActionEvent e) {
+
+        if (ruleTabbedPane.getTabCount() > 2) {
+            Dialog frame = new JDialog();//构造一个新的JFrame，作为新窗口。
+            frame.setBounds(
+                    new Rectangle(
+                            // 让新窗口与SwingTest窗口示例错开50像素。
+                            620,
+                            300,
+                            // 窗口总大小-500像素
+                            200,
+                            100
+                    )
+            );
+
+
+            JPanel xin = new JPanel();
+            xin.setLayout(null);
+
+            JLabel Tips = new JLabel("Are you sure you want to delete");
+            Tips.setBounds(20, 10, 200, 20);
+            xin.add(Tips);
+
+            // Ok
+            JButton Ok_button = new JButton("Yes");
+            Ok_button.setBounds(120, 40, 60, 20);
+            xin.add(Ok_button);
+            Ok_button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String type = ruleTabbedPane.getTitleAt(ruleTabbedPane.getSelectedIndex());
+                    View Remove_view = burp.views.get(type);
+                    if (Remove_view != null) {
+                        for (View.LogEntry l : Remove_view.log) {
+                            YamlUtil.removeYaml(l.id, BurpExtender.Yaml_Path);
+                        }
+                    }
+                    ruleTabbedPane.remove(ruleTabbedPane.getSelectedIndex());
+                    frame.dispose();
+
+                }
+            });
+
+            // no
+            JButton No_button = new JButton("NO");
+            No_button.setBounds(30, 40, 60, 20);
+            xin.add(No_button);
+            No_button.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    frame.dispose();
+
+                }
+            });
+
+
+            ((JDialog) frame).getContentPane().add(xin);
+            frame.setModalityType(Dialog.ModalityType.APPLICATION_MODAL);    // 设置模式类型。
+            frame.setVisible(true);
+
+
+        }
+    }
+
+    public Config(BurpExtender burp) {
+        tabMenu.add(closeTabMenuItem);
+        closeTabMenuItem.addActionListener(e -> closeTabActionPerformed(e));
+        this.burp = burp;
     }
 
     /**
@@ -38,102 +123,197 @@ public class Config {
         one.setBounds(0, 0, 1180, 500);
 
 
-
-
         // Yaml File Path 文本展示框
         JLabel yaml_Path = new JLabel("Yaml File Path:");
-        yaml_Path.setBounds(5, -10, 100, 50);
+        yaml_Path.setBounds(5, 20, 100, 50);
 
         // 展示路径
         txtfield1 = new JTextField();   //创建文本框
         txtfield1.setText(yaml_path);    //设置文本框的内容
-        txtfield1.setBounds(110, 5, 772, 20);
+        txtfield1.setEditable(false);
+        txtfield1.setBounds(110, 35, 772, 20);
 
 
-        // Select Yaml按钮
-        JButton select_yaml_button = new JButton("Select Yaml");
-        select_yaml_button.setBounds(886, 4, 87, 23);
-        select_Yaml(select_yaml_button);
+        // Online Update按钮
+        JButton Online_Update_button = new JButton("Update");
+        Online_Update_button.setBounds(886, 34, 87, 23);
+        Online_Update_Yaml(Online_Update_button);
 
         // load 按钮
         JButton load_button = new JButton("Load Yaml");
-        load_button.setBounds(980, 4, 87, 23);
-        load_button_Yaml(load_button, view_class, log, txtfield1);
+        load_button.setBounds(980, 34, 87, 23);
+        load_button_Yaml(load_button);
 
         // 线程选择
         JLabel thread_num = new JLabel("Thread Numbers:");
-        thread_num.setBounds(1074, -10, 100, 50);
-        SpinnerNumberModel model1 = new SpinnerNumberModel(10, 1, 500, 5);
+        thread_num.setBounds(1074, 20, 100, 50);
+        SpinnerNumberModel model1 = new SpinnerNumberModel(10, 1, 500, 3);
         this.spinner1 = new JSpinner(model1);
         ((JSpinner.DefaultEditor) this.spinner1.getEditor()).getTextField().setEditable(false);
 
-        this.spinner1.setBounds(1168, 4, 100, 23);
+        this.spinner1.setBounds(1168, 34, 100, 23);
 
 
 
 
         // add按钮
         JButton add_button = new JButton("Add");
-        add_button.setBounds(5, 45, 70, 23);
-        Add_Button_Yaml(add_button, yaml_path, view_class, log);
+        add_button.setBounds(5, 75, 70, 23);
+        Add_Button_Yaml(add_button, yaml_path);
 
         // Edit按钮
         JButton edit_button = new JButton("Edit");
-        edit_button.setBounds(5, 70, 70, 23);
-        Edit_Button_Yaml(edit_button,yaml_path,view_class,log);
+        edit_button.setBounds(5, 100, 70, 23);
+//        Edit_Button_Yaml(edit_button,yaml_path,view_class,log);
+        Edit_Button_Yaml(edit_button, yaml_path);
 
         // Del按钮
         JButton remove_button = new JButton("Del");
-        remove_button.setBounds(5, 95, 70, 23);
-        Del_Button_Yaml(remove_button,yaml_path,view_class,log);
+        remove_button.setBounds(5, 125, 70, 23);
+        Del_Button_Yaml(remove_button, yaml_path);
 
 
-        JSplitPane view = this.view_class.Get_View();
-        view.setBounds(80, 30, 1185, 780);
+
+        // 展示界面容器
+        ruleTabbedPane = new JTabbedPane();
+        this.ruleSwitch = new TabTitleEditListener(ruleTabbedPane, this.burp);
+        ruleTabbedPane.setBounds(80, 60, 1185, 740);
+        Bfunc.show_yaml(burp);
+        ruleTabbedPane.addMouseListener(ruleSwitch);
+
+
+//        // Switch 文本展示框
+//        JLabel Expansion_switch = new JLabel("Extend Switch:");
+//        Expansion_switch.setBounds(5, -10, 100, 50);
+
+        // 开启按钮
+//        JButton on_off_button = new JButton("Stop");
+        JButton on_off_button = new JButton("Start");
+        on_off_button.setBounds(20, 5, 70, 23);
+        Color Primary = on_off_button.getBackground();
+//        on_off_button.setBackground(Color.green);
+        on_off_Button_action(on_off_button, Primary);
+
+//        // Switch 文本展示框
+//        JLabel Carry_head = new JLabel("Carry Head:");
+//        Carry_head.setBounds(224, -10, 100, 50);
+
+        // 携带head按钮
+        JButton carry_head_button = new JButton("Head_On");
+        carry_head_button.setBounds(150, 5, 90, 23);
+        carry_head_Button_action(carry_head_button, Primary);
+
+        // bypass按钮
+        JButton bypass_button = new JButton("Bypass_On");
+        bypass_button.setBounds(300, 5, 90, 23);
+        bypass_Button_action(bypass_button, bypass_button.getBackground());
+
+        // Filter_Host 文本展示框
+        JLabel Filter_Host = new JLabel("Filter_Host:");
+        Filter_Host.setBounds(473, -10, 100, 50);
+
+        // Host 输入框
+        JTextField Host_txtfield = new JTextField();   //创建文本框
+        Host_txtfield.setText("*");    //设置文本框的内容
+        Host_txtfield.setBounds(548, 5, 572, 20);
+        burp.Host_txtfield = Host_txtfield;
 
 
 //        添加到主面板
         one.add(yaml_Path);
         one.add(txtfield1);
-        one.add(select_yaml_button);
+        one.add(Online_Update_button);
         one.add(load_button);
+        one.add(bypass_button);
         one.add(add_button);
         one.add(edit_button);
         one.add(remove_button);
-        one.add(view);
+        one.add(ruleTabbedPane);
         one.add(thread_num);
         one.add(spinner1);
+//        one.add(Expansion_switch);
+        one.add(on_off_button);
+//        one.add(Carry_head);
+        one.add(carry_head_button);
+        one.add(Filter_Host);
+        one.add(Host_txtfield);
 
 
     }
 
-    private void select_Yaml(JButton Button_one) {
+    private void carry_head_Button_action(JButton Button_one, Color Primary) {
 
         Button_one.addActionListener(new ActionListener() {
-            class MyChooser extends JFileChooser {
-                protected JDialog createDialog(Component parent)
-                        throws HeadlessException {
-                    JDialog dlg = super.createDialog(parent);
-                    dlg.setLocation(500, 300);
-                    return dlg;
-                }
-            }
-
             @Override
             public void actionPerformed(ActionEvent e) {
-                JFileChooser chooser = new MyChooser();             //设置选择器
-                chooser.setMultiSelectionEnabled(true);             //设为多选
-                int returnVal = chooser.showOpenDialog(Button_one);        //是否打开文件选择框
-                if (returnVal == JFileChooser.APPROVE_OPTION) {          //如果符合文件类型
-                    yaml_path = chooser.getSelectedFile().getAbsolutePath();
-                    txtfield1.setText(yaml_path);      //获取绝对路径
+                if (burp.Carry_head) {
+                    burp.Carry_head = false;
+                    Button_one.setText("Head_On");
+                    Button_one.setBackground(Primary);
+                } else {
+                    burp.Carry_head = true;
+                    Button_one.setText("Head_Off");
+                    Button_one.setBackground(Color.green);
                 }
+
             }
         });
     }
 
 
-    private void Edit_Button_Yaml(JButton Button_one, String yaml_path1, View view_class, List<View.LogEntry> log2) {
+    private void on_off_Button_action(JButton Button_one, Color Primary) {
+
+        Button_one.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (burp.on_off) {
+                    burp.on_off = false;
+                    Button_one.setText("Start");
+                    Button_one.setBackground(Primary);
+                } else {
+                    burp.on_off = true;
+                    Button_one.setText("Stop");
+                    Button_one.setBackground(Color.green);
+                }
+
+            }
+        });
+    }
+
+
+    private void bypass_Button_action(JButton Button_one, Color Primary) {
+
+        Button_one.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (burp.Bypass) {
+                    burp.Bypass = false;
+                    Button_one.setText("Bypass_On");
+                    Button_one.setBackground(Primary);
+                } else {
+                    burp.Bypass = true;
+                    Button_one.setText("Bypass_Off");
+                    Button_one.setBackground(Color.green);
+                }
+
+            }
+        });
+    }
+
+
+    private void Online_Update_Yaml(JButton Button_one) {
+
+        Button_one.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                YamlUtil.init_Yaml(burp, one);
+            }
+        });
+    }
+
+
+     private void Edit_Button_Yaml(JButton Button_one, String yaml_path1) {
         Button_one.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -145,9 +325,11 @@ public class Config {
                                 300,
                                 // 窗口总大小-500像素
                                 300,
-                                260
+                                300
                         )
                 );
+                String type = ruleTabbedPane.getTitleAt(ruleTabbedPane.getSelectedIndex());
+                View view_class = burp.views.get(type);
 
                 JPanel xin = new JPanel();
                 xin.setLayout(null);
@@ -160,12 +342,24 @@ public class Config {
                 xin.add(Name_field);
                 xin.add(Name_text);
 
+                // Method
+                JLabel Method_field = new JLabel("Method :");
+//                JTextField Method_text = new JTextField();
+                JComboBox Method_text = new JComboBox();    //创建JComboBox
+                Method_text.addItem("GET");    //向下拉列表中添加一项
+                Method_text.addItem("POST");    //向下拉列表中添加一项
+                Method_text.setSelectedItem(view_class.Choice.method);
+                Method_field.setBounds(10, 45, 40, 20);
+                Method_text.setBounds(65, 45, 200, 20);
+                xin.add(Method_field);
+                xin.add(Method_text);
+
                 // Url
                 JLabel Url_field = new JLabel("Url :");
                 JTextField Url_text = new JTextField();
                 Url_text.setText(view_class.Choice.url);
-                Url_field.setBounds(10, 45, 40, 20);
-                Url_text.setBounds(65, 45, 200, 20);
+                Url_field.setBounds(10, 85, 40, 20);
+                Url_text.setBounds(65, 85, 200, 20);
                 xin.add(Url_field);
                 xin.add(Url_text);
 
@@ -173,8 +367,8 @@ public class Config {
                 JLabel Re_field = new JLabel("Re :");
                 JTextField Re_text = new JTextField();
                 Re_text.setText(view_class.Choice.re);
-                Re_field.setBounds(10, 85, 40, 20);
-                Re_text.setBounds(65, 85, 200, 20);
+                Re_field.setBounds(10, 125, 40, 20);
+                Re_text.setBounds(65, 125, 200, 20);
                 xin.add(Re_field);
                 xin.add(Re_text);
 
@@ -182,8 +376,8 @@ public class Config {
                 JLabel Info_field = new JLabel("Info :");
                 JTextField Info_text = new JTextField();
                 Info_text.setText(view_class.Choice.info);
-                Info_field.setBounds(10, 125, 40, 20);
-                Info_text.setBounds(65, 125, 200, 20);
+                Info_field.setBounds(10, 165, 40, 20);
+                Info_text.setBounds(65, 165, 200, 20);
                 xin.add(Info_field);
                 xin.add(Info_text);
 
@@ -191,32 +385,38 @@ public class Config {
                 JLabel State_field = new JLabel("state :");
                 JTextField State_text = new JTextField();
                 State_text.setText(view_class.Choice.state);
-                State_field.setBounds(10, 165, 40, 20);
-                State_text.setBounds(65, 165, 200, 20);
+                State_field.setBounds(10, 205, 40, 20);
+                State_text.setBounds(65, 205, 200, 20);
                 xin.add(State_field);
                 xin.add(State_text);
 
                 // Ok
                 JButton Ok_button = new JButton("OK");
-                Ok_button.setBounds(200, 205, 60, 20);
+                Ok_button.setBounds(200, 245, 60, 20);
                 xin.add(Ok_button);
                 Ok_button.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         String name = Name_text.getText();
                         String url = Url_text.getText();
+                        String method = (String) Method_text.getSelectedItem();
                         String re = Re_text.getText();
                         String info = Info_text.getText();
                         String state = State_text.getText();
                         Map<String, Object> add_map = new HashMap<String, Object>();
                         add_map.put("id", Integer.parseInt(view_class.Choice.id));
+                        add_map.put("type", type);
+                        add_map.put("loaded", view_class.Choice.loaded);
                         add_map.put("name", name);
+                        add_map.put("method", method);
                         add_map.put("url", url);
                         add_map.put("re", re);
                         add_map.put("info", info);
                         add_map.put("state", state);
                         YamlUtil.updateYaml(add_map, yaml_path1);
-                        Bfunc.show_yaml(view_class, log2, yaml_path1);
+//                        burp.views = Bfunc.Get_Views();
+//                        Bfunc.show_yaml(burp);
+                        Bfunc.show_yaml_view(burp, view_class, type);
                         frame.dispose();
 
                     }
@@ -224,7 +424,7 @@ public class Config {
 
                 // no
                 JButton No_button = new JButton("NO");
-                No_button.setBounds(130, 205, 60, 20);
+                No_button.setBounds(130, 245, 60, 20);
                 xin.add(No_button);
                 No_button.addActionListener(new ActionListener() {
                     @Override
@@ -245,11 +445,13 @@ public class Config {
     }
 
 
-    private void Del_Button_Yaml(JButton Button_one,String yaml_path1, View view_class, List<View.LogEntry> log2) {
+    private void Del_Button_Yaml(JButton Button_one, String yaml_path1) {
 
         Button_one.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                String type = ruleTabbedPane.getTitleAt(ruleTabbedPane.getSelectedIndex());
+                View view_class = burp.views.get(type);
                 if (view_class.Choice != null) {
                     JDialog frame = new JDialog();//构造一个新的JFrame，作为新窗口。
                     frame.setBounds(
@@ -263,13 +465,14 @@ public class Config {
                             )
                     );
 
+
                     JPanel xin = new JPanel();
                     xin.setLayout(null);
 
                     JLabel Tips = new JLabel("Are you sure you want to delete");
                     Tips.setBounds(20, 10, 200, 20);
                     xin.add(Tips);
-                    
+
                     // Ok
                     JButton Ok_button = new JButton("Yes");
                     Ok_button.setBounds(120, 40, 60, 20);
@@ -277,8 +480,9 @@ public class Config {
                     Ok_button.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            YamlUtil.removeYaml(view_class.Choice.id,yaml_path1);
-                            Bfunc.show_yaml(view_class,log2,yaml_path1);
+                            YamlUtil.removeYaml(view_class.Choice.id, yaml_path1);
+//                            burp.views = Bfunc.Get_Views();
+                            Bfunc.show_yaml_view(burp, view_class, type);
                             frame.dispose();
 
                         }
@@ -308,11 +512,12 @@ public class Config {
     }
 
 
-    private void Add_Button_Yaml(JButton Button_one, String yaml_path1, View view_class, List<View.LogEntry> log2) {
+    private void Add_Button_Yaml(JButton Button_one, String yaml_path1) {
 
         Button_one.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+//                burp.call.printOutput(ruleSwitch.ruleEditTextField.getText().trim());
                 JDialog frame = new JDialog();//构造一个新的JFrame，作为新窗口。
                 frame.setBounds(
                         new Rectangle(
@@ -321,10 +526,10 @@ public class Config {
                                 300,
                                 // 窗口总大小-500像素
                                 300,
-                                260
+                                300
                         )
                 );
-
+                String type = ruleTabbedPane.getTitleAt(ruleTabbedPane.getSelectedIndex());
                 JPanel xin = new JPanel();
                 xin.setLayout(null);
                 // Name
@@ -335,42 +540,52 @@ public class Config {
                 xin.add(Name_field);
                 xin.add(Name_text);
 
+                // Method
+                JLabel Method_field = new JLabel("Method :");
+                JComboBox Method_text = new JComboBox();    //创建JComboBox
+                Method_text.addItem("GET");    //向下拉列表中添加一项
+                Method_text.addItem("POST");    //向下拉列表中添加一项
+                Method_field.setBounds(10, 45, 40, 20);
+                Method_text.setBounds(65, 45, 200, 20);
+                xin.add(Method_field);
+                xin.add(Method_text);
+
                 // Url
                 JLabel Url_field = new JLabel("Url :");
                 JTextField Url_text = new JTextField();
-                Url_field.setBounds(10, 45, 40, 20);
-                Url_text.setBounds(65, 45, 200, 20);
+                Url_field.setBounds(10, 85, 40, 20);
+                Url_text.setBounds(65, 85, 200, 20);
                 xin.add(Url_field);
                 xin.add(Url_text);
 
                 // Re
                 JLabel Re_field = new JLabel("Re :");
                 JTextField Re_text = new JTextField();
-                Re_field.setBounds(10, 85, 40, 20);
-                Re_text.setBounds(65, 85, 200, 20);
+                Re_field.setBounds(10, 125, 40, 20);
+                Re_text.setBounds(65, 125, 200, 20);
                 xin.add(Re_field);
                 xin.add(Re_text);
 
                 // Info
                 JLabel Info_field = new JLabel("Info :");
                 JTextField Info_text = new JTextField();
-                Info_field.setBounds(10, 125, 40, 20);
-                Info_text.setBounds(65, 125, 200, 20);
+                Info_field.setBounds(10, 165, 40, 20);
+                Info_text.setBounds(65, 165, 200, 20);
                 xin.add(Info_field);
                 xin.add(Info_text);
 
                 // State
                 JLabel State_field = new JLabel("State :");
                 JTextField State_text = new JTextField();
-                State_field.setBounds(10, 165, 40, 20);
-                State_text.setBounds(65, 165, 200, 20);
+                State_field.setBounds(10, 205, 40, 20);
+                State_text.setBounds(65, 205, 200, 20);
                 xin.add(State_field);
                 xin.add(State_text);
 
 
                 // Ok
                 JButton Ok_button = new JButton("OK");
-                Ok_button.setBounds(200, 205, 60, 20);
+                Ok_button.setBounds(200, 245, 60, 20);
                 xin.add(Ok_button);
                 Ok_button.addActionListener(new ActionListener() {
                     @Override
@@ -386,18 +601,22 @@ public class Config {
                         id += 1;
                         String name = Name_text.getText();
                         String url = Url_text.getText();
+                        String method = (String) Method_text.getSelectedItem();
                         String re = Re_text.getText();
                         String info = Info_text.getText();
                         String state = State_text.getText();
                         Map<String, Object> add_map = new HashMap<String, Object>();
+                        add_map.put("type", type);
                         add_map.put("id", id);
+                        add_map.put("loaded", true);
                         add_map.put("name", name);
+                        add_map.put("method", method);
                         add_map.put("url", url);
                         add_map.put("re", re);
                         add_map.put("info", info);
                         add_map.put("state", state);
                         YamlUtil.addYaml(add_map, yaml_path1);
-                        Bfunc.show_yaml(view_class, log2, yaml_path1);
+                        Bfunc.show_yaml_view(burp, burp.views.get(type), type);
                         frame.dispose();
 
                     }
@@ -405,7 +624,7 @@ public class Config {
 
                 // no
                 JButton No_button = new JButton("NO");
-                No_button.setBounds(130, 205, 60, 20);
+                No_button.setBounds(130, 245, 60, 20);
                 xin.add(No_button);
                 No_button.addActionListener(new ActionListener() {
                     @Override
@@ -425,11 +644,11 @@ public class Config {
     }
 
 
-    private void load_button_Yaml(JButton Button_one, View tt, List<View.LogEntry> ll, JTextField ii) {
+    private void load_button_Yaml(JButton Button_one) {
         Button_one.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Bfunc.show_yaml(tt, ll, ii.getText());
+                Bfunc.show_yaml(burp);
             }
         });
 
@@ -446,3 +665,4 @@ public class Config {
     }
 
 }
+
